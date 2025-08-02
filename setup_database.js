@@ -75,12 +75,23 @@ async function setupDatabase() {
             CREATE TABLE IF NOT EXISTS guild_transactions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
-                amount DECIMAL(15, 2) NOT NULL,
+                amount DECIMAL(65, 2) NOT NULL,
                 type ENUM('deposit', 'withdrawal', 'loan', 'repayment') NOT NULL,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
         console.log('Table "guild_transactions" created or already exists.');
+
+        // Create bank_profit_records table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS bank_profit_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                guild_bank_balance_snapshot DECIMAL(30, 2) NOT NULL,
+                net_profit_since_last_record DECIMAL(30, 2) NULL
+            )
+        `);
+        console.log('Table "bank_profit_records" created or already exists.');
 
         // Create guild_stocks table
         await connection.query(`
@@ -104,7 +115,7 @@ async function setupDatabase() {
 
         // Add or modify 'loan' and 'repayment' to the ENUM for 'type' column in guild_transactions
         await connection.query(`
-            ALTER TABLE guild_transactions MODIFY COLUMN type ENUM('deposit', 'withdrawal', 'loan', 'repayment', 'loan_collection', 'guild_buy', 'tax_collection', 'transfer_sent', 'transfer_received', 'transfer_fee') NOT NULL;
+            ALTER TABLE guild_transactions MODIFY COLUMN type ENUM('deposit', 'withdrawal', 'loan', 'repayment', 'loan_collection', 'guild_buy', 'tax_collection', 'transfer_sent', 'transfer_received', 'transfer_fee', 'stock_trading_profit', 'stock_trading_loss') NOT NULL;
         `);
         console.log('Modified "type" column in "guild_transactions" table.');
 
@@ -199,23 +210,23 @@ async function setupDatabase() {
         await connection.query('SET FOREIGN_KEY_CHECKS = 1'); // 외래 키 제약 조건 활성화
         console.log('Foreign key checks enabled.');
 
-        const [stocks] = await connection.query('SELECT COUNT(*) as count FROM stocks');
-        if (stocks[0].count === 0) {
+        // const [stocks] = await connection.query('SELECT COUNT(*) as count FROM stocks');
+        // if (stocks[0].count === 0) {
             await connection.query(`
                 INSERT INTO stocks (name, symbol, price) VALUES
-                ('삼성전자', '삼전', 80000),
-                ('SK하이닉스', '하이닉스', 130000),
-                ('카카오', '카카오', 120000),
-                ('네이버', '네이버', 350000),
-                ('LG화학', 'LG화학', 700000),
-                ('현대차', '현대차', 200000),
-                ('기아', '기아', 90000),
-                ('셀트리온', '셀트리온', 250000),
-                ('POSCO홀딩스', '포스코', 400000),
-                ('KB금융', 'KB금융', 60000)
+                ('삼성전자', '삼전', 100000),
+                ('SK하이닉스', '하이닉스', 100000),
+                ('카카오', '카카오', 100000),
+                ('네이버', '네이버', 100000),
+                ('LG화학', 'LG화학', 100000),
+                ('현대차', '현대차', 100000),
+                ('기아', '기아', 100000),
+                ('셀트리온', '셀트리온', 100000),
+                ('POSCO홀딩스', '포스코', 100000),
+                ('KB금융', 'KB금융', 100000)
             `);
             console.log('Initial stocks inserted.');
-        }
+        // }
 
     } catch (error) {
         console.error('Error setting up the database:', error);

@@ -34,13 +34,22 @@ async function guildAutoTradeStocks(client) {
                 const quantityToSell = quantity; // 전량 매도
                 if (quantityToSell.greaterThan(0)) {
                     const sellValue = quantityToSell.times(currentPrice);
+                    const costBasis = quantityToSell.times(averagePurchasePrice);
+                    const profitLoss = sellValue.minus(costBasis);
+                    const transactionType = profitLoss.isPositive() ? 'stock_trading_profit' : 'stock_trading_loss';
 
                     // 보유 주식 삭제
                     await connection.query('DELETE FROM guild_stocks WHERE guild_id = 1 AND stock_id = ?', [stock.stock_id]);
                     // 국가 은행 잔고 증가
                     await connection.query('UPDATE guild_bank SET balance = balance + ? WHERE id = 1', [sellValue.toFixed(2)]);
 
-                    const saleLog = `📈 **자동 매도:** ${stock.name}(${stock.symbol}) ${formatDecimal(quantityToSell)}주를 전량 매도. (+${formatDecimal(sellValue)}원, 수익률: ${profitMargin.times(100).toFixed(2)}%)\n`;
+                    // 주식 거래 수익/손실 기록
+                    await connection.query(
+                        'INSERT INTO guild_transactions (user_id, amount, type) VALUES (?, ?, ?)',
+                        ['guild_bank_system', profitLoss.toFixed(2), transactionType]
+                    );
+
+                    const saleLog = `📈 **자동 매도:** ${stock.name}(${stock.symbol}) ${formatDecimal(quantityToSell)}주를 전량 매도. (+${formatDecimal(sellValue)}원, ${profitLoss.isPositive() ? '수익' : '손실'}: ${formatDecimal(profitLoss)}원, 수익률: ${profitMargin.times(100).toFixed(2)}%)\n`;
                     tradeSummary += saleLog;
                     hasTrade = true;
                     console.log(`자동 매도: ${stock.name} ${formatDecimal(quantityToSell)}주`);

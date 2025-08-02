@@ -19,8 +19,7 @@ async function sendGuildBankStatus(client, title = '국가 은행 현황 업데�
             `SELECT s.name, s.symbol, gs.quantity, gs.average_purchase_price, s.price as current_price
              FROM guild_stocks gs
              JOIN stocks s ON gs.stock_id = s.id
-             WHERE gs.guild_id = 1 AND gs.quantity > 0
-             ORDER BY (gs.quantity * s.price) DESC`
+             WHERE gs.guild_id = 1 AND gs.quantity > 0`
         );
 
         let stockReport = '**보유 주식 현황:**\n';
