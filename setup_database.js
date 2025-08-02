@@ -24,8 +24,8 @@ async function setupDatabase() {
             CREATE TABLE IF NOT EXISTS user_stocks (
                 user_id VARCHAR(255) NOT NULL,
                 stock_id INT NOT NULL,
-                quantity INT NOT NULL,
-                average_purchase_price DECIMAL(10, 2) NOT NULL,
+                quantity BIGINT NOT NULL,
+                average_purchase_price DECIMAL(30, 2) NOT NULL,
                 PRIMARY KEY (user_id, stock_id),
                 FOREIGN KEY (stock_id) REFERENCES stocks(id)
             )
@@ -87,19 +87,104 @@ async function setupDatabase() {
             CREATE TABLE IF NOT EXISTS guild_stocks (
                 guild_id INT NOT NULL DEFAULT 1,
                 stock_id INT NOT NULL,
-                quantity INT NOT NULL,
-                average_purchase_price DECIMAL(10, 2) NOT NULL,
+                quantity BIGINT NOT NULL,
+                average_purchase_price DECIMAL(30, 2) NOT NULL,
                 PRIMARY KEY (guild_id, stock_id),
                 FOREIGN KEY (stock_id) REFERENCES stocks(id)
             )
         `);
         console.log('Table "guild_stocks" created or already exists.');
 
+        // Alter guild_stocks table to ensure quantity is BIGINT and average_purchase_price is DECIMAL(30, 2)
+        await connection.query(`
+            ALTER TABLE guild_stocks MODIFY COLUMN quantity BIGINT NOT NULL,
+                                  MODIFY COLUMN average_purchase_price DECIMAL(30, 2) NOT NULL;
+        `);
+        console.log('Modified "quantity" and "average_purchase_price" columns in "guild_stocks" table.');
+
         // Add or modify 'loan' and 'repayment' to the ENUM for 'type' column in guild_transactions
         await connection.query(`
             ALTER TABLE guild_transactions MODIFY COLUMN type ENUM('deposit', 'withdrawal', 'loan', 'repayment', 'loan_collection', 'guild_buy', 'tax_collection', 'transfer_sent', 'transfer_received', 'transfer_fee') NOT NULL;
         `);
         console.log('Modified "type" column in "guild_transactions" table.');
+
+        // Create guilds table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guilds (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                created_at DATETIME DEFAULT NOW()
+            )
+        `);
+        console.log('Table "guilds" created or already exists.');
+
+        // Create guild_members table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guild_members (
+                user_id VARCHAR(255) PRIMARY KEY,
+                guild_id INT NOT NULL,
+                joined_at DATETIME DEFAULT NOW(),
+                FOREIGN KEY (guild_id) REFERENCES guilds(id)
+            )
+        `);
+        console.log('Table "guild_members" created or already exists.');
+
+        // Create guild_missions table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guild_missions (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                guild_id INT NOT NULL,
+                type ENUM('수익률', '거래량', '도박승리') NOT NULL,
+                target_value DECIMAL(30, 2) NOT NULL,
+                current_value DECIMAL(30, 2) DEFAULT 0,
+                completed BOOLEAN DEFAULT FALSE,
+                FOREIGN KEY (guild_id) REFERENCES guilds(id)
+            )
+        `);
+        console.log('Table "guild_missions" created or already exists.');
+
+        // Create guild_seasons table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guild_seasons (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(100) NOT NULL,
+                start_date DATETIME NOT NULL,
+                end_date DATETIME,
+                ranking_criteria ENUM('수익률', '총거래량', '참여도') NOT NULL,
+                is_active BOOLEAN DEFAULT FALSE
+            )
+        `);
+        console.log('Table "guild_seasons" created or already exists.');
+
+        // Create guild_rewards table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guild_rewards (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                guild_id INT NOT NULL,
+                season_id INT NOT NULL,
+                reward_type VARCHAR(100) NOT NULL,
+                reward_value TEXT NOT NULL,
+                claimed BOOLEAN DEFAULT FALSE,
+                FOREIGN KEY (guild_id) REFERENCES guilds(id),
+                FOREIGN KEY (season_id) REFERENCES guild_seasons(id)
+            )
+        `);
+        console.log('Table "guild_rewards" created or already exists.');
+
+        // Create guild_invitations table
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS guild_invitations (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                guild_id INT NOT NULL,
+                inviter_id VARCHAR(255) NOT NULL,
+                invitee_id VARCHAR(255) NOT NULL,
+                status ENUM('pending', 'accepted', 'declined', 'expired') DEFAULT 'pending',
+                created_at DATETIME DEFAULT NOW(),
+                expires_at DATETIME,
+                FOREIGN KEY (guild_id) REFERENCES guilds(id)
+            )
+        `);
+        console.log('Table "guild_invitations" created or already exists.');
 
         // Add some initial stocks if the table is empty
         // 외래 키 제약 조건 때문에 user_stocks를 먼저 비워야 함

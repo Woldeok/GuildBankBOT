@@ -9,6 +9,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  supportBigNumbers: true, // Enable support for BIGINT and DECIMAL
+  bigNumberStrings: true,  // Return BIGINT and DECIMAL as strings
   typeCast: function (field, next) {
     if (field.type === 'DECIMAL' || field.type === 'NEWDECIMAL') {
       return field.string();

@@ -8,6 +8,8 @@ module.exports = {
         .setName('거래기록')
         .setDescription('길드 은행의 최근 거래 기록을 확인합니다.'),
     async execute(interaction) {
+        await interaction.deferReply({ ephemeral: true }); // 즉시 응답을 지연시킴
+
         let connection;
         try {
             connection = await pool.getConnection();
@@ -17,14 +19,19 @@ module.exports = {
             );
 
             if (transactions.length === 0) {
-                return interaction.reply({ content: '아직 길드 은행 거래 기록이 없습니다.', ephemeral: true });
+                return interaction.editReply({ content: '아직 길드 은행 거래 기록이 없습니다.' });
             }
 
             let replyContent = `**국가 은행 최근 거래 기록 (최신순):**
 `;
             for (const tx of transactions) {
-                const user = await interaction.client.users.fetch(tx.user_id);
-                const username = user ? user.username : `알 수 없는 유저 (${tx.user_id})`;
+                let username = `알 수 없는 유저 (${tx.user_id})`;
+                try {
+                    const user = await interaction.client.users.fetch(tx.user_id);
+                    username = user ? user.username : `알 수 없는 유저 (${tx.user_id})`;
+                } catch (userFetchError) {
+                    console.warn(`사용자 정보 조회 실패 (ID: ${tx.user_id}):`, userFetchError.message);
+                }
                 const amount = new Decimal(tx.amount);
                 let typeText;
                 let sign;
@@ -58,6 +65,18 @@ module.exports = {
                         typeText = '세금징수';
                         sign = '+';
                         break;
+                    case 'transfer_sent':
+                        typeText = '송금(보냄)';
+                        sign = '-';
+                        break;
+                    case 'transfer_received':
+                        typeText = '송금(받음)';
+                        sign = '+';
+                        break;
+                    case 'transfer_fee':
+                        typeText = '송금수수료';
+                        sign = '-';
+                        break;
                     default:
                         typeText = tx.type;
                         sign = '';
@@ -67,11 +86,11 @@ module.exports = {
 `;
             }
 
-            await interaction.reply({ content: replyContent, ephemeral: true });
+            await interaction.editReply({ content: replyContent });
 
         } catch (error) {
             console.error('거래 기록 조회 중 오류 발생:', error);
-            await interaction.reply({ content: '거래 기록 조회 중 오류가 발생했습니다. 다시 시도해주세요.', ephemeral: true });
+            await interaction.editReply({ content: '거래 기록 조회 중 오류가 발생했습니다. 다시 시도해주세요.' });
         } finally {
             if (connection) {
                 connection.release();

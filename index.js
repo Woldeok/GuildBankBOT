@@ -97,11 +97,16 @@ client.on('messageCreate', async message => {
                 },
             },
             reply: async (options) => {
+                // DM에서는 deferReply가 필요 없으므로 바로 메시지 전송
                 return message.reply(options);
             },
-            deferReply: async () => {}, // DM에서는 필요 없을 수 있음
+            deferReply: async (options) => {
+                // DM에서는 deferReply가 필요 없으므로 아무것도 하지 않음
+                return;
+            }, 
             editReply: async (options) => {
-                return message.reply(options); // DM에서는 edit 대신 새 메시지 전송
+                // DM에서는 edit 대신 새 메시지 전송
+                return message.reply(options);
             }
         };
 
