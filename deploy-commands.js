@@ -24,20 +24,38 @@ const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
   try {
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
-    // Use this for guild-specific commands (fast updates)
+    // Delete existing guild commands
     const guildId = process.env.GUILD_ID;
+    console.log(`Deleting existing application (/) commands for guild ${guildId}...`);
+    await rest.put(
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId),
+      { body: [] },
+    );
+    console.log(`Successfully deleted existing application (/) commands for guild ${guildId}.`);
+
+    // Register new guild commands
+    console.log(`Registering ${commands.length} application (/) commands for guild ${guildId}.`);
     await rest.put(
       Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId),
       { body: commands },
     );
-    console.log(`Successfully reloaded application (/) commands for guild ${guildId}.`);
+    console.log(`Successfully registered application (/) commands for guild ${guildId}.`);
 
-    // Use this for global commands (can take up to 1 hour to update)
+    // Delete existing global commands
+    console.log('Deleting existing global application (/) commands...');
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: [] },
+    );
+    console.log('Successfully deleted existing global application (/) commands.');
+
+    // Register new global commands
+    console.log(`${commands.length}개의 전역 애플리케이션 (/) 명령어 등록 중.`);
     await rest.put(
       Routes.applicationCommands(process.env.CLIENT_ID),
       { body: commands },
     );
-    console.log('Successfully reloaded global application (/) commands.');
+        console.log('전역 애플리케이션 (/) 명령어 등록 완료.');
 
   } catch (error) {
     console.error(error);

@@ -35,7 +35,7 @@ client.once('ready', () => {
 
   // 연체 대출 확인 및 압류 스케줄러 시작 (매일 자정 실행)
   cron.schedule('0 0 * * *', () => {
-    console.log('Running overdue loan check and collection...');
+    console.log('연체 대출 확인 및 회수 실행 중...');
     checkAndCollectOverdueLoans();
   });
   checkAndCollectOverdueLoans(); // 봇 시작 시 한 번 실행
@@ -185,3 +185,10 @@ client.on('interactionCreate', async interaction => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+// Start Web Server
+const webApp = require('./webserver/app');
+const WEB_PORT = process.env.WEB_PORT || 8080;
+webApp.listen(WEB_PORT, () => {
+    console.log(`웹 서버가 포트 ${WEB_PORT}에서 실행 중입니다.`);
+});

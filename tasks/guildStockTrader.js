@@ -2,6 +2,7 @@ const pool = require('../database');
 require('dotenv').config();
 const { formatDecimal } = require('../utils/numberUtils');
 const Decimal = require('decimal.js');
+Decimal.set({ toExpPos: 100, toExpNeg: -100 });
 
 const ADMIN_IDS = process.env.ADMIN_IDS ? process.env.ADMIN_IDS.split(',').map(id => id.trim()) : [];
 
@@ -43,10 +44,14 @@ async function guildAutoTradeStocks(client) {
                     // 국가 은행 잔고 증가
                     await connection.query('UPDATE guild_bank SET balance = balance + ? WHERE id = 1', [sellValue.toFixed(2)]);
 
+                    const powerOfTen = new Decimal('1e28'); // 10의 28승
+                    const amountHigh = profitLoss.dividedBy(powerOfTen).floor();
+                    const amountLow = profitLoss.modulo(powerOfTen);
+
                     // 주식 거래 수익/손실 기록
                     await connection.query(
-                        'INSERT INTO guild_transactions (user_id, amount, type) VALUES (?, ?, ?)',
-                        ['guild_bank_system', profitLoss.toFixed(2), transactionType]
+                        'INSERT INTO guild_transactions (user_id, amount_high, amount_low, type) VALUES (?, ?, ?, ?)',
+                        ['guild_bank_system', amountHigh.toFixed(0), amountLow.toFixed(2), transactionType]
                     );
 
                     const saleLog = `📈 **자동 매도:** ${stock.name}(${stock.symbol}) ${formatDecimal(quantityToSell)}주를 전량 매도. (+${formatDecimal(sellValue)}원, ${profitLoss.isPositive() ? '수익' : '손실'}: ${formatDecimal(profitLoss)}원, 수익률: ${profitMargin.times(100).toFixed(2)}%)\n`;

@@ -24,7 +24,7 @@ async function setupDatabase() {
             CREATE TABLE IF NOT EXISTS user_stocks (
                 user_id VARCHAR(255) NOT NULL,
                 stock_id INT NOT NULL,
-                quantity BIGINT NOT NULL,
+                quantity DECIMAL(65, 0) NOT NULL,
                 average_purchase_price DECIMAL(30, 2) NOT NULL,
                 PRIMARY KEY (user_id, stock_id),
                 FOREIGN KEY (stock_id) REFERENCES stocks(id)
@@ -70,12 +70,17 @@ async function setupDatabase() {
             console.log('Initial row inserted into "guild_bank".');
         }
 
+        // Drop guild_transactions table if it exists to apply schema changes
+        await connection.query('DROP TABLE IF EXISTS guild_transactions');
+        console.log('Table "guild_transactions" dropped if it existed.');
+
         // Create guild_transactions table
         await connection.query(`
             CREATE TABLE IF NOT EXISTS guild_transactions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id VARCHAR(255) NOT NULL,
-                amount DECIMAL(65, 2) NOT NULL,
+                amount_high DECIMAL(35, 0) NOT NULL,
+                amount_low DECIMAL(30, 2) NOT NULL,
                 type ENUM('deposit', 'withdrawal', 'loan', 'repayment') NOT NULL,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -93,12 +98,16 @@ async function setupDatabase() {
         `);
         console.log('Table "bank_profit_records" created or already exists.');
 
+        // Drop guild_stocks table if it exists to apply schema changes
+        await connection.query('DROP TABLE IF EXISTS guild_stocks');
+        console.log('Table "guild_stocks" dropped if it existed.');
+
         // Create guild_stocks table
         await connection.query(`
             CREATE TABLE IF NOT EXISTS guild_stocks (
                 guild_id INT NOT NULL DEFAULT 1,
                 stock_id INT NOT NULL,
-                quantity BIGINT NOT NULL,
+                quantity DECIMAL(65, 0) NOT NULL,
                 average_purchase_price DECIMAL(30, 2) NOT NULL,
                 PRIMARY KEY (guild_id, stock_id),
                 FOREIGN KEY (stock_id) REFERENCES stocks(id)
@@ -106,12 +115,7 @@ async function setupDatabase() {
         `);
         console.log('Table "guild_stocks" created or already exists.');
 
-        // Alter guild_stocks table to ensure quantity is BIGINT and average_purchase_price is DECIMAL(30, 2)
-        await connection.query(`
-            ALTER TABLE guild_stocks MODIFY COLUMN quantity BIGINT NOT NULL,
-                                  MODIFY COLUMN average_purchase_price DECIMAL(30, 2) NOT NULL;
-        `);
-        console.log('Modified "quantity" and "average_purchase_price" columns in "guild_stocks" table.');
+        
 
         // Add or modify 'loan' and 'repayment' to the ENUM for 'type' column in guild_transactions
         await connection.query(`
