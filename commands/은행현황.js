@@ -35,7 +35,7 @@ module.exports = {
                  FROM guild_stocks gs
                  JOIN stocks s ON gs.stock_id = s.id
                  WHERE gs.guild_id = 1 AND gs.quantity > 0
-                 ORDER BY (gs.quantity * s.price) DESC`
+                 ORDER BY (gs.quantity * CAST(s.price AS DECIMAL(20, 4))) DESC`
             );
 
             let stockReport = '**보유 주식 현황:**\n';
