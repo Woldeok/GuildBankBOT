@@ -25,7 +25,10 @@ app.use(session({
 // 정적 파일 제공 (views 디렉토리 내의 CSS, JS 등)
 app.use(express.static(path.join(__dirname, 'views')));
 
+const bankRoutes = require('./routes/bank'); // bankRoutes 추가
+
 app.use('/auth', authRoutes);
+app.use('/', bankRoutes); // bankRoutes 연결
 
 // 루트 경로 (/) 처리
 app.get('/', (req, res) => {

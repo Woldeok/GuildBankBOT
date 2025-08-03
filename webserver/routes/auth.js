@@ -20,14 +20,11 @@ router.get('/discord/callback', async (req, res) => {
     try {
         const tokenData = await exchangeCodeForToken(code);
         const userInfo = await getUserInfo(tokenData.access_token);
+        const userIsAdmin = isAdmin(userInfo.id); // 이 라인을 추가합니다.
 
-        const userIsAdmin = isAdmin(userInfo.id);
+        // userInfo 객체 전체를 콘솔에 출력하여 확인
+        console.log('[Discord OAuth] 가져온 사용자 정보:', userInfo);
 
-        // 로그인 정보 콘솔에 출력
-        console.log(`[Discord OAuth] 사용자 로그인: ${userInfo.username} (ID: ${userInfo.id}), 관리자 여부: ${userIsAdmin ? '관리자' : '일반 사용자'}`);
-
-        // For simplicity, we'll redirect to the frontend with user info and admin status
-        // In a real application, you'd use sessions/JWTs
         // 로그인 정보 콘솔에 출력 (기존 로직 유지)
         console.log(`[Discord OAuth] 사용자 로그인: ${userInfo.username} (ID: ${userInfo.id}), 관리자 여부: ${userIsAdmin ? '관리자' : '일반 사용자'}`);
 

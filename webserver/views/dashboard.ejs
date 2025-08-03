@@ -39,6 +39,15 @@
             <p class="lead <%= isAdmin ? 'text-success' : 'text-danger' %>">
                 <%= isAdmin ? '당신은 관리자입니다.' : '당신은 관리자가 아닙니다.' %>
             </p>
+            <% if (isAdmin) { %>
+                <a href="/bank-status" class="btn btn-info mt-3 me-2">
+                    은행 현황 보기 (관리자)
+                </a>
+            <% } else { %>
+                <a href="/my-status" class="btn btn-info mt-3 me-2">
+                    내 현황 보기
+                </a>
+            <% } %>
             <a href="/logout" class="btn btn-danger mt-3">
                 로그아웃
             </a>
